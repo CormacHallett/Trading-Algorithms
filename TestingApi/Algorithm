@@ -1,0 +1,73 @@
+import alpaca_trade_api as tradeapi
+import pandas as pd
+import numpy as np
+import time
+
+# Alpaca API credentials
+API_KEY = 'your_api_key'
+API_SECRET = 'your_api_secret'
+BASE_URL = 'https://paper-api.alpaca.markets'  # Use the paper trading URL
+
+# Initialize Alpaca API
+api = tradeapi.REST(API_KEY, API_SECRET, BASE_URL, api_version='v2')
+
+# Define the stock symbol and time frame
+symbol = 'AAPL'  # Example: Apple stock
+timeframe = 'day'  # Timeframe: daily data
+short_window = 50  # Short-term moving average window
+long_window = 200  # Long-term moving average window
+
+# Fetch historical data for backtesting
+def get_data(symbol, timeframe):
+    barset = api.get_barset(symbol, timeframe, limit=500)  # Adjust limit as needed
+    data = barset[symbol]
+    df = pd.DataFrame({
+        'time': [bar.t for bar in data],
+        'close': [bar.c for bar in data]
+    })
+    df.set_index('time', inplace=True)
+    return df
+
+# Moving Average Crossover Logic
+def moving_average_crossover(df):
+    df['SMA50'] = df['close'].rolling(window=short_window).mean()
+    df['SMA200'] = df['close'].rolling(window=long_window).mean()
+    df.dropna(inplace=True)
+    
+    # Buy signal: Short-term MA crosses above long-term MA
+    df['signal'] = np.where(df['SMA50'] > df['SMA200'], 1, 0)
+    df['position'] = df['signal'].diff()
+    
+    return df
+
+# Place orders based on the signals
+def place_order():
+    df = get_data(symbol, timeframe)
+    df = moving_average_crossover(df)
+    
+    # Get the latest signal (the last value in the DataFrame)
+    latest_signal = df['position'].iloc[-1]
+    
+    if latest_signal == 1:
+        print(f"Buy signal detected for {symbol}. Buying now...")
+        api.submit_order(
+            symbol=symbol,
+            qty=1,  # Number of shares to buy
+            side='buy',
+            type='market',
+            time_in_force='gtc'
+        )
+    elif latest_signal == -1:
+        print(f"Sell signal detected for {symbol}. Selling now...")
+        api.submit_order(
+            symbol=symbol,
+            qty=1,  # Number of shares to sell
+            side='sell',
+            type='market',
+            time_in_force='gtc'
+        )
+
+# Backtest and execute every minute
+while True:
+    place_order()
+    time.sleep(60)
