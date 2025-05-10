@@ -2,3 +2,8 @@ This is going to be a super basic trading algorithm so I can get used to the api
 
 ChatGPT is giving me the idea on what to do, as well as the code. I am testing the code and making sure it works, then will mess with the code and rewrite it. Overall, this 
 is not my own algorithm or my own code.
+
+
+This is going to be a moving average crossover strategy. When the older and newer moving averages cross, the idea is that it will show when the momentum of the stock is either 
+rising or falling. This is super, duper basic and I won't be including any risk managment. I assume that this will not have any solid profits on the backtest because simply, it sounds 
+dumb. Probably can be made better, but this is just a way to figure out how to actually run an algorithm, so returns are not the goal. 
